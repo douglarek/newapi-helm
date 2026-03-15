@@ -1,0 +1,142 @@
+name: Release Helm Chart
+
+on:
+  push:
+    paths:
+      - 'charts/**'
+    branches:
+      - master
+  pull_request:
+    paths:
+      - 'charts/**'
+    branches:
+      - master
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect Chart Changes
+        id: changes
+        run: |
+          # Get all changed files in charts directory
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD -- charts/ 2>/dev/null || echo "")
+
+          # Check if any Chart.yaml was changed
+          CHART_YAML_CHANGED=false
+          HAS_OTHER_CHANGES=false
+
+          for file in $CHANGED_FILES; do
+            if [[ "$file" == *"Chart.yaml" ]]; then
+              CHART_YAML_CHANGED=true
+            else
+              HAS_OTHER_CHANGES=true
+            fi
+          done
+
+          echo "chart_yaml_changed=$CHART_YAML_CHANGED" >> $GITHUB_OUTPUT
+          echo "has_other_changes=$HAS_OTHER_CHANGES" >> $GITHUB_OUTPUT
+
+      - name: Validate Version Bump
+        if: steps.changes.outputs.chart_yaml_changed == 'true'
+        run: |
+          # Get all Chart.yaml files
+          for chart_yaml in $(find charts -name "Chart.yaml"); do
+            current_version=$(yq -r '.version' "$chart_yaml")
+
+            # Get previous version from last commit
+            if git show HEAD~1:"$chart_yaml" 2>/dev/null; then
+              prev_version=$(git show HEAD~1:"$chart_yaml" | yq -r '.version')
+            else
+              prev_version="0.0.0"
+            fi
+
+            echo "Chart: $chart_yaml"
+            echo "Previous version: $prev_version"
+            echo "Current version: $current_version"
+
+            # Compare versions (simple comparison, supports semver)
+            if [ "$current_version" = "$prev_version" ]; then
+              echo "ERROR: Version has not been bumped for $chart_yaml"
+              echo "Files changed but version is still $current_version"
+              exit 1
+            fi
+
+            # Use sort -V for version comparison
+            if ! echo -e "$prev_version\n$current_version" | sort -V | head -1 | grep -q "^$prev_version$"; then
+              echo "ERROR: Version $current_version is not greater than $prev_version"
+              exit 1
+            fi
+
+            echo "✓ Version bumped from $prev_version to $current_version"
+          done
+
+      - name: Check for Non-Chart.yaml Changes
+        if: steps.changes.outputs.chart_yaml_changed == 'false' && steps.changes.outputs.has_other_changes == 'true'
+        run: |
+          echo "WARNING: Files changed but Chart.yaml was not modified"
+          echo ""
+          echo "ERROR: Files were changed but version was not bumped in Chart.yaml"
+          echo "Please update the version field in Chart.yaml before pushing"
+          exit 1
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.2
+
+      - name: Install yq
+        uses: mikefarah/yq@v4
+        with:
+          cmd: yq --version
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package and Push Charts
+        run: |
+          # Get all chart directories
+          for chart_dir in charts/*/; do
+            chart_yaml="$chart_dir/Chart.yaml"
+
+            if [ -f "$chart_yaml" ]; then
+              # Get chart name from Chart.yaml (not directory name)
+              chart_name=$(yq -r '.name' "$chart_yaml")
+              version=$(yq -r '.version' "$chart_yaml")
+              app_version=$(yq -r '.appVersion' "$chart_yaml")
+
+              echo "Processing chart: $chart_name"
+              echo "Version: $version"
+              echo "App Version: $app_version"
+
+              # Build OCI registry path
+              oci_registry="oci://ghcr.io/${{ github.repository }}"
+
+              # Package chart
+              helm package "$chart_dir" --destination .
+
+              # Push to OCI registry (use actual chart name from Chart.yaml)
+              helm push "${chart_name}-${version}.tgz" "$oci_registry"
+
+              echo "✓ Pushed $chart_name:$version to $oci_registry"
+            fi
+          done
