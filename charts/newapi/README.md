@@ -63,10 +63,10 @@ new-api/
 helm install new-api oci://ghcr.io/douglarek/newapi-helm/new-api -n <namespace> --create-namespace
 
 # Install specific version
-helm install new-api oci://ghcr.io/douglarek/newapi-helm/new-api --version 0.1.8 -n <namespace> --create-namespace
+helm install new-api oci://ghcr.io/douglarek/newapi-helm/new-api --version 0.1.9 -n <namespace> --create-namespace
 
 # Pull to local
-helm pull oci://ghcr.io/douglarek/newapi-helm/new-api --version 0.1.8
+helm pull oci://ghcr.io/douglarek/newapi-helm/new-api --version 0.1.9
 ```
 
 ### 2. Configure values.yaml
