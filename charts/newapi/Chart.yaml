@@ -2,8 +2,8 @@ apiVersion: v2
 name: new-api
 description: A Helm chart for deploying new-api on Kubernetes
 type: application
-version: 0.2.2
-appVersion: "v0.12.12"
+version: 0.2.3
+appVersion: "v0.12.14"
 kubeVersion: ">=1.19.0-0"
 icon: https://raw.githubusercontent.com/QuantumNous/new-api/refs/heads/main/web/public/logo.png
 keywords:
