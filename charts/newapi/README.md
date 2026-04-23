@@ -63,10 +63,10 @@ new-api/
 helm install new-api oci://ghcr.io/douglarek/newapi-helm/new-api -n <namespace> --create-namespace
 
 # Install specific version
-helm install new-api oci://ghcr.io/douglarek/newapi-helm/new-api --version 0.2.3 -n <namespace> --create-namespace
+helm install new-api oci://ghcr.io/douglarek/newapi-helm/new-api --version 0.2.4 -n <namespace> --create-namespace
 
 # Pull to local
-helm pull oci://ghcr.io/douglarek/newapi-helm/new-api --version 0.2.3
+helm pull oci://ghcr.io/douglarek/newapi-helm/new-api --version 0.2.4
 ```
 
 ### 2. Configure values.yaml
@@ -143,7 +143,7 @@ helm install new-api ./new-api -f myvalues.yaml -n <namespace> --create-namespac
 | `replicaCount` | Number of replicas | 1 |
 | `image.registry` | Container registry (empty for Docker Hub) | `''` |
 | `image.repository` | Image repository | `calciumion/new-api` |
-| `image.tag` | Image tag | `v0.12.14` |
+| `image.tag` | Image tag | `v0.12.15` |
 | `imagePullSecrets` | Image pull secrets for private registry | `[]` |
 | `sessionSecret` | Session secret for multi-node | `change-me-for-multi-node-deployment` |
 | `service.type` | Kubernetes Service type | `ClusterIP` |
