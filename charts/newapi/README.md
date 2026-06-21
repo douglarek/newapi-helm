@@ -143,7 +143,7 @@ helm install new-api ./new-api -f myvalues.yaml -n <namespace> --create-namespac
 | `replicaCount` | Number of replicas | 1 |
 | `image.registry` | Container registry (empty for Docker Hub) | `''` |
 | `image.repository` | Image repository | `calciumion/new-api` |
-| `image.tag` | Image tag | `v1.0.0-rc.12` |
+| `image.tag` | Image tag | `v1.0.0-rc.14` |
 | `imagePullSecrets` | Image pull secrets for private registry | `[]` |
 | `sessionSecret` | Session secret for multi-node | `change-me-for-multi-node-deployment` |
 | `service.type` | Kubernetes Service type | `ClusterIP` |
